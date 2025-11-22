@@ -1,4 +1,4 @@
-package com.example.carrot_backend.api.auth.domain;
+package com.example.carrot_backend.auth.domain;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
