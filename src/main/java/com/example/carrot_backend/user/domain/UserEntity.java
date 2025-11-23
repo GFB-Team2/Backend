@@ -35,5 +35,6 @@ public class UserEntity {
     @Column(nullable = false)
     private String name;
 
+    private String profileUrl;
 
 }

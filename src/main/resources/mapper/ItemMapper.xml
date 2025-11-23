@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.carrot_backend.item.infrastructure.mapper.ItemMapper">
+
+    <select id="findAll"
+            parameterType="com.example.carrot_backend.item.controller.dto.ItemSearchCondDto"
+            resultType="com.example.carrot_backend.item.controller.dto.ItemListResponse">
+        SELECT
+        item_id      AS id,
+        title,
+        price,
+        region,
+        category,
+        thumbnail_url AS thumbnailUrl,
+        created_at    AS createdAt
+        FROM items
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (title LIKE CONCAT('%', #{keyword}, '%')
+                OR content LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+
+            <if test="regions != null and !regions.isEmpty()">
+                AND region IN
+                <foreach collection="regions" item="region" open="(" separator="," close=")">
+                    #{region}
+                </foreach>
+            </if>
+
+            <if test="categories != null and !categories.isEmpty()">
+                AND category IN
+                <foreach collection="categories" item="category" open="(" separator="," close=")">
+                    #{category}
+                </foreach>
+            </if>
+        </where>
+        ORDER BY created_at DESC
+    </select>
+
+</mapper>
