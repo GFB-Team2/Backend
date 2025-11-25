@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🥕 당근마켓 풀버전 (자동 업로드)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  </head>
+  <body class="bg-gray-100 font-sans text-gray-800">
+    <div id="app" class="min-h-screen flex flex-col">
+      <nav class="bg-white border-b shadow-sm sticky top-0 z-50">
+        <div
+          class="max-w-5xl mx-auto px-4 h-16 flex justify-between items-center">
+          <h1
+            class="text-2xl font-extrabold text-orange-500 cursor-pointer"
+            @click="fetchItems">
+            🥕 당근마켓
+          </h1>
+          <div v-if="token" class="flex items-center gap-4">
+            <div class="text-right hidden sm:block">
+              <p class="font-bold">{{ user.nickname }}님</p>
+              <p class="text-xs text-gray-500">
+                {{ user.region_name }} · 매너온도 {{ user.manner_temperature
+                }}°C
+              </p>
+            </div>
+            <button
+              @click="logout"
+              class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded text-sm font-bold">
+              로그아웃
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <main class="flex-grow max-w-5xl mx-auto w-full p-4">
+        <div
+          v-if="!token"
+          class="max-w-md mx-auto mt-10 bg-white p-8 rounded-xl shadow-lg">
+          <div class="flex border-b mb-6">
+            <button
+              @click="isSignupMode = false"
+              :class="{'border-orange-500 text-orange-500': !isSignupMode}"
+              class="w-1/2 py-2 font-bold border-b-2 border-transparent">
+              로그인
+            </button>
+            <button
+              @click="isSignupMode = true"
+              :class="{'border-orange-500 text-orange-500': isSignupMode}"
+              class="w-1/2 py-2 font-bold border-b-2 border-transparent">
+              회원가입
+            </button>
+          </div>
+
+          <div v-if="!isSignupMode" class="space-y-4">
+            <input
+              v-model="loginForm.email"
+              type="text"
+              placeholder="이메일"
+              class="w-full border p-3 rounded" />
+            <input
+              v-model="loginForm.password"
+              type="password"
+              placeholder="비밀번호"
+              class="w-full border p-3 rounded"
+              @keyup.enter="login" />
+            <button
+              @click="login"
+              class="w-full bg-orange-500 text-white p-3 rounded-lg font-bold hover:bg-orange-600">
+              로그인하기
+            </button>
+          </div>
+
+          <div v-else class="space-y-4">
+            <input
+              v-model="signupForm.email"
+              type="text"
+              placeholder="이메일"
+              class="w-full border p-3 rounded" />
+            <input
+              v-model="signupForm.password"
+              type="password"
+              placeholder="비밀번호"
+              class="w-full border p-3 rounded" />
+            <div class="grid grid-cols-2 gap-2">
+              <input
+                v-model="signupForm.name"
+                type="text"
+                placeholder="이름"
+                class="w-full border p-3 rounded" />
+              <input
+                v-model="signupForm.nickname"
+                type="text"
+                placeholder="닉네임"
+                class="w-full border p-3 rounded" />
+            </div>
+            <button
+              @click="signup"
+              class="w-full bg-gray-800 text-white p-3 rounded-lg font-bold hover:bg-gray-900">
+              가입하기
+            </button>
+          </div>
+        </div>
+
+        <div v-else>
+          <div
+            class="bg-white p-6 rounded-xl shadow-sm mb-8 border border-gray-200">
+            <h2 class="text-lg font-bold mb-4">📦 물건 내놓기</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input
+                v-model="itemForm.title"
+                placeholder="제목"
+                class="border p-3 rounded" />
+              <input
+                v-model="itemForm.price"
+                type="number"
+                placeholder="가격"
+                class="border p-3 rounded" />
+              <input
+                v-model="itemForm.category"
+                placeholder="카테고리"
+                class="border p-3 rounded" />
+              <input
+                v-model="itemForm.region_id"
+                placeholder="지역"
+                class="border p-3 rounded" />
+              <textarea
+                v-model="itemForm.content"
+                placeholder="내용"
+                class="col-span-1 md:col-span-2 border p-3 rounded h-24 resize-none"></textarea>
+
+              <div
+                class="col-span-1 md:col-span-2 bg-gray-50 p-3 rounded border border-dashed border-gray-300">
+                <p class="text-sm font-bold text-gray-600 mb-2">사진 첨부</p>
+                <input
+                  type="file"
+                  @change="handleFileUpload"
+                  class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100" />
+                <p
+                  v-if="selectedFile"
+                  class="text-green-600 text-xs mt-2 font-bold">
+                  ✅ {{ selectedFile.name }} 선택됨 (등록 시 자동 업로드)
+                </p>
+              </div>
+            </div>
+            <button
+              @click="createItem"
+              class="w-full bg-orange-500 text-white p-3 rounded-lg mt-4 font-bold hover:bg-orange-600 shadow-sm transition">
+              게시글 등록 (사진 자동 업로드)
+            </button>
+          </div>
+
+          <div class="flex justify-between items-end mb-4">
+            <h2 class="text-xl font-bold text-gray-800">🏠 최신 매물</h2>
+            <button @click="fetchItems" class="text-sm text-gray-500 underline">
+              새로고침
+            </button>
+          </div>
+
+          <div
+            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div
+              v-for="item in items"
+              :key="item.item_id"
+              @click="openDetail(item.item_id)"
+              class="bg-white rounded-xl shadow-sm hover:shadow-md transition overflow-hidden cursor-pointer border border-gray-100">
+              <div
+                class="h-48 bg-gray-100 flex items-center justify-center overflow-hidden relative">
+                <img
+                  v-if="item.main_image_url"
+                  :src="item.main_image_url"
+                  class="w-full h-full object-cover" />
+                <span v-else class="text-gray-400 text-2xl">📷</span>
+                <div
+                  v-if="item.is_sold"
+                  class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                  <span class="text-white font-bold border-2 px-2 py-1"
+                    >판매완료</span
+                  >
+                </div>
+              </div>
+              <div class="p-4">
+                <h3 class="font-medium truncate mb-1">{{ item.title }}</h3>
+                <div class="text-xs text-gray-500 mb-2">
+                  {{ item.region_name }} · {{ timeAgo(item.created_at) }}
+                </div>
+                <div class="font-bold text-lg">
+                  {{ formatPrice(item.price) }}원
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-if="selectedItem"
+          class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          @click.self="closeDetail">
+          <div
+            class="bg-white rounded-xl max-w-2xl w-full overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="h-64 bg-gray-200 flex items-center justify-center">
+              <img
+                v-if="selectedItem.image_urls && selectedItem.image_urls.length > 0"
+                :src="selectedItem.image_urls[0]"
+                class="w-full h-full object-cover" />
+              <span v-else class="text-gray-400 text-3xl">📷</span>
+            </div>
+            <div class="p-6">
+              <div class="flex items-center justify-between mb-4 border-b pb-4">
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                    👤
+                  </div>
+                  <div>
+                    <p class="font-bold text-gray-800">
+                      {{ selectedItem.seller.nickname }}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                      {{ selectedItem.region_name }} · 매너온도 {{
+                      selectedItem.seller.manner_temperature }}°C
+                    </p>
+                  </div>
+                </div>
+                <span
+                  v-if="selectedItem.status === 'SOLD'"
+                  class="bg-gray-200 text-gray-600 px-3 py-1 rounded-full text-sm font-bold"
+                  >판매완료</span
+                >
+                <span
+                  v-else
+                  class="bg-green-100 text-green-600 px-3 py-1 rounded-full text-sm font-bold"
+                  >판매중</span
+                >
+              </div>
+              <h2 class="text-2xl font-bold mb-2">{{ selectedItem.title }}</h2>
+              <p class="text-gray-400 text-sm mb-6">
+                {{ selectedItem.category }} · {{
+                timeAgo(selectedItem.created_at) }} · 조회 {{ selectedItem.views
+                }}
+              </p>
+              <p class="text-gray-800 whitespace-pre-line mb-8 leading-relaxed">
+                {{ selectedItem.content }}
+              </p>
+              <div class="flex items-center justify-between border-t pt-4">
+                <span class="font-bold text-2xl"
+                  >{{ formatPrice(selectedItem.price) }}원</span
+                >
+                <button
+                  @click="closeDetail"
+                  class="bg-orange-500 text-white px-6 py-3 rounded-lg font-bold hover:bg-orange-600">
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const { createApp } = Vue;
+      createApp({
+        data() {
+          return {
+            isSignupMode: false,
+            token: null,
+            user: {},
+            items: [],
+            selectedItem: null,
+            loginForm: { email: "", password: "" },
+            signupForm: { email: "", password: "", name: "", nickname: "" },
+            itemForm: {
+              title: "",
+              price: "",
+              content: "",
+              category: "디지털기기",
+              region_id: "서울",
+              image_urls: [],
+            },
+            selectedFile: null, // 파일만 선택해두고 업로드는 나중에
+            apiBase: "http://127.0.0.1:8000/api/v1",
+          };
+        },
+        mounted() {
+          const savedToken = localStorage.getItem("carrot_token");
+          if (savedToken) {
+            this.token = savedToken;
+            this.fetchMe();
+          }
+          this.fetchItems();
+        },
+        methods: {
+          async signup() {
+            try {
+              await axios.post(`${this.apiBase}/auth/signup`, this.signupForm);
+              alert("가입 성공! 이제 로그인해주세요.");
+              this.isSignupMode = false;
+              this.loginForm.email = this.signupForm.email;
+            } catch (e) {
+              alert("가입 실패: " + (e.response?.data?.detail || e.message));
+            }
+          },
+          async login() {
+            try {
+              const res = await axios.post(
+                `${this.apiBase}/auth/login`,
+                this.loginForm
+              );
+              this.token = res.data.access_token;
+              localStorage.setItem("carrot_token", this.token);
+              this.fetchMe();
+              this.fetchItems();
+            } catch (e) {
+              alert("로그인 실패!");
+            }
+          },
+          async fetchMe() {
+            if (!this.token) return;
+            try {
+              const res = await axios.get(`${this.apiBase}/users/me`, {
+                headers: { Authorization: `Bearer ${this.token}` },
+              });
+              this.user = res.data;
+            } catch (e) {
+              this.logout();
+            }
+          },
+          async fetchItems() {
+            try {
+              const res = await axios.get(
+                `${this.apiBase}/items?region_id=서울`
+              );
+              this.items = res.data.items;
+            } catch (e) {
+              console.error(e);
+            }
+          },
+          handleFileUpload(event) {
+            // 1. 파일 선택만 해둠 (업로드는 createItem 때 함)
+            this.selectedFile = event.target.files[0];
+          },
+
+          // [핵심 변경] 게시글 등록 버튼 하나로 통합!
+          async createItem() {
+            if (!this.itemForm.title || !this.itemForm.price)
+              return alert("제목/가격 입력");
+
+            try {
+              // 1. 사진이 선택되어 있다면, 먼저 업로드한다!
+              if (this.selectedFile) {
+                const formData = new FormData();
+                formData.append("file", this.selectedFile);
+
+                const uploadRes = await axios.post(
+                  `${this.apiBase}/items/upload`,
+                  formData,
+                  {
+                    headers: { "Content-Type": "multipart/form-data" },
+                  }
+                );
+
+                // 업로드된 URL을 폼에 담는다
+                this.itemForm.image_urls = [uploadRes.data.url];
+              } else {
+                this.itemForm.image_urls = [];
+              }
+
+              // 2. 게시글 등록 (이미지 URL 포함해서)
+              await axios.post(`${this.apiBase}/items`, this.itemForm, {
+                headers: { Authorization: `Bearer ${this.token}` },
+              });
+
+              alert("등록 완료!");
+              // 초기화
+              this.itemForm = {
+                title: "",
+                price: "",
+                content: "",
+                category: "디지털기기",
+                region_id: "서울",
+                image_urls: [],
+              };
+              this.selectedFile = null;
+              this.fetchItems();
+            } catch (e) {
+              alert("등록 실패: " + e.message);
+            }
+          },
+          async openDetail(itemId) {
+            try {
+              const res = await axios.get(`${this.apiBase}/items/${itemId}`);
+              this.selectedItem = res.data;
+              this.fetchItems();
+            } catch (e) {
+              alert("정보 로드 실패");
+            }
+          },
+          closeDetail() {
+            this.selectedItem = null;
+          },
+          logout() {
+            this.token = null;
+            this.user = {};
+            localStorage.removeItem("carrot_token");
+            this.isSignupMode = false;
+            this.fetchItems();
+          },
+          formatPrice(p) {
+            return p?.toLocaleString();
+          },
+          timeAgo(d) {
+            return new Date(d).toLocaleDateString();
+          },
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>
