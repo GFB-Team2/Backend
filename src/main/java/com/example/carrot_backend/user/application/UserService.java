@@ -20,7 +20,7 @@ public class UserService {
 
     public MyPageResponseDto getMyPage(String email){
 
-        var user = userReader.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        var user = userReader.findByEmail(email).orElseThrow(() -> new RuntimeException("사용자가 없습니다."));
 
         var items = itemReader.findAllBySellerIdOrderByCreatedAtDesc(user.getId());
 

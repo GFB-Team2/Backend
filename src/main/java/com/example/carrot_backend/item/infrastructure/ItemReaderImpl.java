@@ -1,4 +1,4 @@
-package com.example.carrot_backend.item.infrastructure.mapper;
+package com.example.carrot_backend.item.infrastructure;
 
 import com.example.carrot_backend.item.domain.ItemEntity;
 import com.example.carrot_backend.item.domain.ItemReader;

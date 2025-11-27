@@ -1,4 +1,4 @@
-package com.example.carrot_backend.item.infrastructure.mapper;
+package com.example.carrot_backend.item.infrastructure;
 
 import com.example.carrot_backend.item.domain.ItemEntity;
 import org.hibernate.cache.spi.support.AbstractReadWriteAccess;

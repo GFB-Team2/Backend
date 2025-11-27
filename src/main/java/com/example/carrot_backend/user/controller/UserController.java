@@ -33,7 +33,7 @@ public class UserController {
 
 
 
-        log.info("response data = {}, {}, {}", response.getNickname(), response.getMyItems(), email);
+        log.info("response data = {}, {}, {}", response.getNickname(), response.getProfileUrl(), email);
 
         return ResponseEntity.ok(ApiResponse.success("마이페이지 조회 성공",  response));
     }
